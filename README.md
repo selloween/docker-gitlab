@@ -77,6 +77,14 @@ docker-compose up
 # Gitlab Runner
 The Gitlab Runner container can run on any host. In this case it's runnning on the same Docker Host as the gitlab instance.
 
+### Environment Variables
+* Copy `sample.env` and save as `.env`
+* Add the domain of your Gitlab host.
+
+```
+GITLAB_HOST=gitlab.example.com
+```
+
 ### Example Docker in Docker Configuration
 
 ```
