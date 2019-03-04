@@ -1,0 +1,18 @@
+version: '3'
+services:
+  gitlab-runner:
+    build: .
+    container_name: gitlab-runner
+    restart: always
+    volumes:
+      - /srv/gitlab-runner:/etc/gitlab-runner
+      - ./config.toml:/etc/gitlab-runner/config.toml
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "gitlab.eodc.eu:172.20.0.2"
+    network_mode: host
+
+networks:
+  default:
+    external:
+      name: gitlab_gitlab-net

@@ -1,0 +1,70 @@
+version: '3'
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: always
+    hostname: ${VIRTUAL_HOST}
+    ports: 
+      - "443:443"
+      - "80:80"
+      - "22:22"
+      - "9090:9090"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url  'https://${VIRTUAL_HOST}'
+        #gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        letsencrypt['enable'] = true
+        letsencrypt['auto_renew_hour'] = "12"
+        letsencrypt['auto_renew_minute'] = "30"
+        letsencrypt['auto_renew_day_of_month'] = "*/7"
+        letsencrypt['auto_renew'] = true
+        gitlab_rails['omniauth_enabled'] = true
+        gitlab_rails['omniauth_allow_single_sign_on'] = ['saml']
+        gitlab_rails['omniauth_block_auto_created_users'] = false
+        gitlab_rails['omniauth_auto_link_saml_user'] = true
+        gitlab_rails['omniauth_providers'] = [{
+          name: 'saml',
+          label: ${LOGIN_LABEL},
+          groups_attribute: 'roles',
+          external_groups: ['gitlab:external'],
+          args: {
+            assertion_consumer_service_url: ${ASSERTION_CONSUMER_SERVICE_URL},
+            idp_cert_fingerprint: ${IDP_CERT_FINGERPRINT},
+            idp_sso_target_url: ${IDP_SSO_TARGET_URL},
+            issuer: ${ISSUER},
+              attribute_statements: {
+              first_name: ['first_name'],
+                last_name: ['last_name'],
+                name: ['name'],
+                username: ['name'],
+                email: ['email'] 
+            },
+            name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'
+                }
+          }]
+        nginx['client_max_body_size'] = '4000m'
+        gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'saml'
+        gitlab_rails['time_zone'] = "Europe/Vienna"
+        registry_external_url "https://${REGISTRY_HOST}"
+        gitlab_rails['registry_enabled'] = true
+        gitlab_rails['registry_path'] = "/var/opt/gitlab/gitlab-rails/shared/registry"
+        gitlab_rails['gitlab_default_projects_features_container_registry']= false
+        gitlab_pages['inplace_chroot'] = true
+        pages_external_url 'https://${PAGES_HOST}'
+        pages_nginx['redirect_http_to_https'] = true
+        pages_nginx['ssl_certificate'] = "/etc/letsencrypt/live/${PAGES_HOST}/fullchain.pem"
+        pages_nginx['ssl_certificate_key'] = "/etc/letsencrypt/live/${PAGES_HOST}/privkey.pem"
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /srv/gitlab/data:/var/opt/gitlab
+      - /srv/gitlab/registry:/var/opt/gitlab/gitlab-rails/shared/registry
+      - /srv/gitlab/ssl:/etc/gitlab/ssl
+    networks:
+      - gitlab-net
+
+networks:
+  gitlab-net:
+    driver: bridge
