@@ -80,10 +80,34 @@ The Gitlab Runner container can run on any host. In this case it's runnning on t
 ### Environment Variables
 * Copy `sample.env` and save as `.env`
 * Add the domain of your Gitlab host.
-
+* Add the Docker IP of your Gitlab container (Only needed if Gitlab Runner is on the same host as Gitlab)
 ```
 GITLAB_HOST=gitlab.example.com
+GITLAN_CONTAINER_IP=172.20.0.2
 ```
+
+### Docker Compose
+```
+version: '3'
+services:
+  gitlab-runner:
+    build: .
+    container_name: gitlab-runner
+    restart: always
+    volumes:
+      - /srv/gitlab-runner:/etc/gitlab-runner
+      - ./config.toml:/etc/gitlab-runner/config.toml
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "${GITLAB_HOST}:${GITLAB_CONTAINER_IP}"
+    network_mode: host
+
+networks:
+  default:
+    external:
+      name: gitlab_gitlab-net
+
+
 
 ### Example Docker in Docker Configuration
 
